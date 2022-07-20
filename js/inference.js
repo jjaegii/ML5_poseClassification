@@ -67,7 +67,7 @@ function draw() {
 
   fill(255, 0, 255);
   noStroke();
-  textSize(20);
+  textSize(256);
   textAlign(CENTER, CENTER);
   text(poseLabel, width / 2, height / 2);
 }
