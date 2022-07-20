@@ -8,12 +8,12 @@ function setup() {
     debug: true,
   };
   brain = ml5.neuralNetwork(options);
-  brain.loadData("helloNno.json", dataReady);
+  brain.loadData("walk,sit,jump,stand,greeting.json", dataReady);
 }
 
 function dataReady() {
   brain.normalizeData();
-  brain.train({ epochs: 50 }, finished);
+  brain.train({ epochs: 200 }, finished);
 }
 
 function finished() {
