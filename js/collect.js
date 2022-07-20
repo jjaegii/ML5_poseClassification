@@ -16,6 +16,7 @@ function collecting() {
     state = "collecting";
     setTimeout(function () {
       console.log("not collecting");
+      alert("not collecting");
       state = "waiting";
     }, 10000);
   }, 1000);
@@ -34,7 +35,7 @@ function setup() {
 
   let options = {
     inputs: 34,
-    outputs: 2,
+    outputs: 5,
     task: "classification",
     debug: true,
   };
