@@ -4,9 +4,10 @@
 <meta http-equiv="Cache-Control" content="no-cache, mustrevalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <link rel="stylesheet" href="../../static/css/bootstrap.min.css">
+<link rel="stylesheet" href="../../static/css/inference.css">
 <!-- p5 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.0.0/p5.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.0.0/addons/p5.sound.min.js"></script>
+
 <!-- ml5 -->
 <script src="https://unpkg.com/ml5@latest/dist/ml5.min.js"></script>
 <script type="text/javascript" src="../../static/js/jquery-3.4.1.min.js"></script>
@@ -31,9 +32,10 @@
             <input type="hidden" id="localSessionDescription" readonly="true">
             <input type="hidden" id="remoteSessionDescription">
             <div id="remoteVideos">
-                <video id="videoElem" width="640" height="480" autoplay="" muted></video>
+                <video id="videoElem" width="640" height="480" autoplay muted loop></video>
                 <canvas id="canvas" width="640" height="480">이 브라우저는 캔버스를 지원하지 않습니다.</canvas>
             </div>
+            <div id="result">결과</div>
             <div id="div"></div>
         </div>
     </div>

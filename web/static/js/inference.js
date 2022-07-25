@@ -10,58 +10,23 @@ PoseNet using p5.js
 /* eslint-disable */
 
 // Grab elements, create settings, etc.
-var video = document.getElementById("videoElem");
-var canvas = document.getElementById("canvas");
-var ctx = canvas.getContext("2d");
+let video = document.getElementById("videoElem");
+let canvas = document.getElementById("canvas");
+let ctx = canvas.getContext("2d");
+let result = document.getElementById("result");
 
 // The detected positions will be inside an array
-let poseNet;
 let poses = [];
 let pose;
-let poseLabel = "";
-
-// Create a webcam capture
-// if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-//   navigator.mediaDevices.getUserMedia({ video: true }).then(function (stream) {
-//     video.srcObject = stream;
-//     video.play();
-//   });
-// }
 
 // A function to draw the video and poses into the canvas.
 // This function is independent of the result of posenet
 // This way the video will not seem slow if poseNet
 // is not detecting a position
 
-function setup() {
-  drawCameraIntoCanvas();
-
-  // Create a new poseNet method with a single detection
-  poseNet = ml5.poseNet(video, modelReady);
-  poseNet.on("pose", gotPoses);
-
-  // neural network model sets
-  let options = {
-    inputs: 34,
-    outputs: 4, // 종류
-    task: "classification",
-    debug: true,
-  };
-
-  brain = ml5.neuralNetwork(options);
-  const modelInfo = {
-    model: "../../static/model/model.json",
-    metadata: "../../static/model/model_meta.json",
-    weights: "../../static/model/model.weights.bin",
-  };
-
-  brain.load(modelInfo, brainLoaded);
-
-  requestAnimationFrame(drawCameraIntoCanvas);
-}
-
 // video -> canvas
 function drawCameraIntoCanvas() {
+  console.log("drawing canvas called");
   // Draw the video element into the canvas
   ctx.drawImage(video, 0, 0, 640, 480);
   // We can call both functions to draw all keypoints and the skeletons
@@ -69,9 +34,15 @@ function drawCameraIntoCanvas() {
   drawSkeleton();
   window.requestAnimationFrame(drawCameraIntoCanvas);
 }
+drawCameraIntoCanvas();
+
+// Create a new poseNet method with a single detection
+const poseNet = ml5.poseNet(video, modelReady);
+poseNet.on("pose", gotPoses);
 
 // A function that gets called every time there's an update from the model
-function gotPoses(poses) {
+function gotPoses(results) {
+  poses = results;
   if (poses.length > 0) {
     pose = poses[0].pose;
     skeleton = poses[0].skeleton;
@@ -87,6 +58,7 @@ function modelReady() {
 
 // A function to draw ellipses over the detected keypoints
 function drawKeypoints() {
+  console.log("keypoints draw");
   // Loop through all the poses detected
   for (let i = 0; i < poses.length; i += 1) {
     // For each pose detected, loop through all the keypoints
@@ -104,6 +76,7 @@ function drawKeypoints() {
 
 // A function to draw the skeletons
 function drawSkeleton() {
+  console.log("skeleton draw");
   // Loop through all the skeletons detected
   for (let i = 0; i < poses.length; i += 1) {
     // For every skeleton, loop through all body connections
@@ -119,6 +92,22 @@ function drawSkeleton() {
 }
 
 // inference
+let options = {
+  inputs: 34,
+  outputs: 4, // 종류
+  task: "classification",
+  debug: true,
+};
+
+brain = ml5.neuralNetwork(options);
+const modelInfo = {
+  model: "../model/model.json",
+  metadata: "../model/model_meta.json",
+  weights: "../model/model.weights.bin",
+};
+
+brain.load(modelInfo, brainLoaded);
+
 function brainLoaded() {
   console.log("pose classification ready");
   classifyPose();
@@ -146,5 +135,12 @@ function gotResult(error, results) {
     poseLabel = "";
   }
   console.log(poseLabel);
+  result.innerHTML = poseLabel;
   classifyPose();
 }
+
+let btn = document.getElementById("btn");
+
+btn.addEventListener("click", function () {
+  console.log("hello");
+});

@@ -59,7 +59,7 @@ func HTTPAPIServerIndex(c *gin.Context) {
 func HTTPAPIServerStreamPlayer(c *gin.Context) {
 	_, all := Config.list()
 	sort.Strings(all)
-	c.HTML(http.StatusOK, "player.tmpl", gin.H{
+	c.HTML(http.StatusOK, "player.html", gin.H{
 		"port":     Config.Server.HTTPPort,
 		"suuid":    c.Param("uuid"),
 		"suuidMap": all,
