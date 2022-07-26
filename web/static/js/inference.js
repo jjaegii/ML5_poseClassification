@@ -13,7 +13,6 @@ PoseNet using p5.js
 let video = document.getElementById("videoElem");
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
-let result = document.getElementById("result");
 
 // The detected positions will be inside an array
 let poses = [];
@@ -26,9 +25,8 @@ let pose;
 
 // video -> canvas
 function drawCameraIntoCanvas() {
-  console.log("drawing canvas called");
   // Draw the video element into the canvas
-  ctx.drawImage(video, 0, 0, 640, 480);
+  ctx.drawImage(video, 0, 0, video.width, video.height);
   // We can call both functions to draw all keypoints and the skeletons
   drawKeypoints();
   drawSkeleton();
@@ -66,7 +64,9 @@ function drawKeypoints() {
       // Only draw an ellipse is the pose probability is bigger than 0.2
       if (keypoint.score > 0.2) {
         ctx.beginPath();
-        ctx.arc(keypoint.position.x, keypoint.position.y, 10, 0, 2 * Math.PI);
+        ctx.fillStyle = "red";
+        ctx.arc(keypoint.position.x, keypoint.position.y, 10, 0, 20 * Math.PI);
+        ctx.fill();
         ctx.stroke();
       }
     }
@@ -84,6 +84,8 @@ function drawSkeleton() {
       ctx.beginPath();
       ctx.moveTo(partA.position.x, partA.position.y);
       ctx.lineTo(partB.position.x, partB.position.y);
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = "red";
       ctx.stroke();
     }
   }
@@ -99,9 +101,9 @@ let options = {
 
 brain = ml5.neuralNetwork(options);
 const modelInfo = {
-  model: "../model/model.json",
-  metadata: "../model/model_meta.json",
-  weights: "../model/model.weights.bin",
+  model: "../../static/model/model.json",
+  metadata: "../../static/model/model_meta.json",
+  weights: "../../static/model/model.weights.bin",
 };
 
 brain.load(modelInfo, brainLoaded);
@@ -133,12 +135,5 @@ function gotResult(error, results) {
     poseLabel = "";
   }
   console.log(poseLabel);
-  result.innerHTML = poseLabel;
   classifyPose();
 }
-
-let btn = document.getElementById("btn");
-
-btn.addEventListener("click", function () {
-  console.log("hello");
-});
