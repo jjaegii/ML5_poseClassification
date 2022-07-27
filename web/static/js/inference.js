@@ -17,6 +17,7 @@ let ctx = canvas.getContext("2d");
 // The detected positions will be inside an array
 let poses = [];
 let pose;
+let text = "";
 
 // A function to draw the video and poses into the canvas.
 // This function is independent of the result of posenet
@@ -30,6 +31,14 @@ function drawCameraIntoCanvas() {
   // We can call both functions to draw all keypoints and the skeletons
   drawKeypoints();
   drawSkeleton();
+
+  ctx.strokeStyle = "black";
+  ctx.font = "bold 48px sans-serif";
+  ctx.lineWidth = 10;
+  ctx.strokeText(text, 30, 100);
+  ctx.fillStyle = "white";
+  ctx.fillText(text, 30, 100);
+
   window.requestAnimationFrame(drawCameraIntoCanvas);
 }
 drawCameraIntoCanvas();
@@ -64,7 +73,8 @@ function drawKeypoints() {
       // Only draw an ellipse is the pose probability is bigger than 0.2
       if (keypoint.score > 0.2) {
         ctx.beginPath();
-        ctx.fillStyle = "red";
+        ctx.strokeStyle = "red";
+        ctx.fillStyle = "white";
         ctx.arc(keypoint.position.x, keypoint.position.y, 10, 0, 20 * Math.PI);
         ctx.fill();
         ctx.stroke();
@@ -134,6 +144,12 @@ function gotResult(error, results) {
   } else {
     poseLabel = "";
   }
-  console.log(poseLabel);
+
+  if (poseLabel == "") {
+    text = "Pose is ...";
+  } else {
+    text = "Pose is " + poseLabel;
+  }
+  // console.log(poseLabel);
   classifyPose();
 }
