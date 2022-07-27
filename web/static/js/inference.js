@@ -53,8 +53,8 @@ function gotPoses(results) {
   if (poses.length > 0) {
     pose = poses[0].pose;
     skeleton = poses[0].skeleton;
-    //console.log("pose : ", pose);
-    //console.log("skeleton : ", skeleton);
+    // console.log("pose : ", pose);
+    // console.log("skeleton : ", skeleton);
   }
 }
 
@@ -63,21 +63,75 @@ function modelReady() {
   poseNet.multiPose(video);
 }
 
+function drawFace(i, nose) {
+  let lefteye_x = poses[i].pose.keypoints[1].position.x;
+  let righteye_x = poses[i].pose.keypoints[2].position.x;
+  let lefteye_y = poses[i].pose.keypoints[1].position.y;
+  let righteye_y = poses[i].pose.keypoints[2].position.y;
+  ctx.beginPath();
+  let dis_x = lefteye_x - righteye_x;
+  let dis_y = lefteye_y - righteye_y;
+  let d = Math.sqrt(Math.abs(dis_x * dis_x) + Math.abs(dis_y * dis_y));
+  ctx.strokeStyle = "black";
+  ctx.fillStyle = "white";
+  ctx.arc(nose.position.x, nose.position.y, d * 2.5, 0, 20 * Math.PI);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(
+    nose.position.x + d,
+    nose.position.y - d * 0.7,
+    d * 0.5,
+    0,
+    20 * Math.PI
+  );
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(
+    nose.position.x - d,
+    nose.position.y - d * 0.7,
+    d * 0.5,
+    0,
+    20 * Math.PI
+  );
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(nose.position.x, nose.position.y + d);
+  ctx.arc(nose.position.x, nose.position.y + d, d, 0, (Math.PI / 180) * 180);
+  ctx.closePath();
+  ctx.stroke();
+}
+
 // A function to draw ellipses over the detected keypoints
 function drawKeypoints() {
   // Loop through all the poses detected
   for (let i = 0; i < poses.length; i += 1) {
     // For each pose detected, loop through all the keypoints
     for (let j = 0; j < poses[i].pose.keypoints.length; j += 1) {
+      if (j >= 1 && j <= 4) continue; // 왼쪽 눈, 오른쪽 눈, 왼쪽 귀, 오른쪽 귀 표시 x
       let keypoint = poses[i].pose.keypoints[j];
       // Only draw an ellipse is the pose probability is bigger than 0.2
-      if (keypoint.score > 0.2) {
-        ctx.beginPath();
-        ctx.strokeStyle = "red";
-        ctx.fillStyle = "white";
-        ctx.arc(keypoint.position.x, keypoint.position.y, 10, 0, 20 * Math.PI);
-        ctx.fill();
-        ctx.stroke();
+      if (keypoint.score > 0.9) {
+        // 코 위치 얼굴 모양 만들기
+        if (j == 0) {
+          drawFace(i, keypoint);
+        } else {
+          ctx.beginPath();
+          ctx.strokeStyle = "red";
+          ctx.fillStyle = "white";
+          ctx.arc(
+            keypoint.position.x,
+            keypoint.position.y,
+            10,
+            0,
+            20 * Math.PI
+          );
+          ctx.fill();
+          ctx.stroke();
+        }
       }
     }
   }
