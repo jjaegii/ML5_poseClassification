@@ -14,7 +14,11 @@ let video = document.getElementById("videoElem");
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
 
+let objectDetector;
+let objects = [];
+
 // The detected positions will be inside an array
+let poseNet;
 let poses = [];
 let pose;
 let text = "";
@@ -24,11 +28,39 @@ let text = "";
 // This way the video will not seem slow if poseNet
 // is not detecting a position
 
+objectDetector = ml5.objectDetector("cocossd", startDetecting);
+
+function startDetecting() {
+  console.log("cocossd model ready");
+  drawCameraIntoCanvas();
+}
+
+// Create a new poseNet method with a single detection
+poseNet = ml5.poseNet(video, modelReady);
+poseNet.on("pose", gotPoses);
+
+// A function that gets called every time there's an update from the model
+function gotPoses(results) {
+  poses = results; // 이 부분에서 bounding box안에 안들어가는 좌표는 다 지워버리고 poses에 넣기
+  if (poses.length > 0) {
+    pose = poses[0].pose; // 아니면 이 부분?
+    skeleton = poses[0].skeleton;
+    // console.log("pose : ", pose);
+    // console.log("skeleton : ", skeleton);
+  }
+}
+
+function modelReady() {
+  console.log("poseNet model ready");
+  poseNet.multiPose(video);
+}
+
 // video -> canvas
 function drawCameraIntoCanvas() {
   // Draw the video element into the canvas
   ctx.drawImage(video, 0, 0, video.width, video.height);
   // We can call both functions to draw all keypoints and the skeletons
+  detect();
   drawKeypoints();
   drawSkeleton();
 
@@ -41,26 +73,69 @@ function drawCameraIntoCanvas() {
 
   window.requestAnimationFrame(drawCameraIntoCanvas);
 }
-drawCameraIntoCanvas();
 
-// Create a new poseNet method with a single detection
-const poseNet = ml5.poseNet(video, modelReady);
-poseNet.on("pose", gotPoses);
+function detect() {
+  objectDetector.detect(video, function (err, results) {
+    if (err) {
+      console.log(err);
+      return;
+    }
+    objects = results;
 
-// A function that gets called every time there's an update from the model
-function gotPoses(results) {
-  poses = results;
-  if (poses.length > 0) {
-    pose = poses[0].pose;
-    skeleton = poses[0].skeleton;
-    // console.log("pose : ", pose);
-    // console.log("skeleton : ", skeleton);
+    if (objects) {
+      drawBox();
+      // console.log(objects);
+    }
+  });
+}
+
+function drawBox() {
+  for (let i = 0; i < objects.length; i += 1) {
+    if (objects[i].label == "person") {
+      ctx.lineWidth = 1;
+      ctx.font = "16px Arial";
+      ctx.fillStyle = "green";
+      ctx.fillText(objects[i].label, objects[i].x + 4, objects[i].y + 16);
+
+      ctx.beginPath();
+      ctx.rect(objects[i].x, objects[i].y, objects[i].width, objects[i].height);
+      ctx.strokeStyle = "green";
+      ctx.stroke();
+      ctx.closePath();
+
+      ctx.beginPath();
+      ctx.strokeStyle = "red";
+      ctx.arc(objects[i].x, objects[i].y, 10, 0, 10 * Math.PI);
+      ctx.stroke();
+    }
   }
 }
 
-function modelReady() {
-  console.log("model ready");
-  poseNet.multiPose(video);
+// objects[a], keypoint.position 입력 받음
+function isInBox(object, position) {
+  let left = object.x;
+  let up = object.y;
+  let right = object.x + object.width;
+  let down = object.y + object.heigth;
+
+  // 왼쪽 위
+  if (!(left <= position.x || up <= position.y)) {
+    return false;
+  }
+  // 오른쪽 위
+  else if (!(right >= position.x || up <= position.y)) {
+    return false;
+  }
+  // 왼쪽 아래
+  else if (!(left <= position.x || down >= position.y)) {
+    return false;
+  }
+  // 오른쪽 아래
+  else if (!(right >= position.x || down >= position.y)) {
+    return false;
+  } else {
+    return true;
+  }
 }
 
 function drawFace(i, nose) {
@@ -107,30 +182,38 @@ function drawFace(i, nose) {
 
 // A function to draw ellipses over the detected keypoints
 function drawKeypoints() {
+  ctx.lineWidth = 5;
   // Loop through all the poses detected
   for (let i = 0; i < poses.length; i += 1) {
     // For each pose detected, loop through all the keypoints
     for (let j = 0; j < poses[i].pose.keypoints.length; j += 1) {
       if (j >= 1 && j <= 4) continue; // 왼쪽 눈, 오른쪽 눈, 왼쪽 귀, 오른쪽 귀 표시 x
       let keypoint = poses[i].pose.keypoints[j];
-      // Only draw an ellipse is the pose probability is bigger than 0.2
-      if (keypoint.score > 0.9) {
-        // 코 위치 얼굴 모양 만들기
-        if (j == 0) {
-          drawFace(i, keypoint);
-        } else {
-          ctx.beginPath();
-          ctx.strokeStyle = "red";
-          ctx.fillStyle = "white";
-          ctx.arc(
-            keypoint.position.x,
-            keypoint.position.y,
-            10,
-            0,
-            20 * Math.PI
-          );
-          ctx.fill();
-          ctx.stroke();
+
+      for (let a = 0; a < objects.length; a++) {
+        if (
+          objects[a].label == "person" &&
+          isInBox(objects[a], keypoint.position) == true
+        ) {
+          if (keypoint.score > 0.5) {
+            // 코 위치 얼굴 모양 만들기
+            if (j == 0) {
+              drawFace(i, keypoint);
+            } else {
+              ctx.beginPath();
+              ctx.strokeStyle = "red";
+              ctx.fillStyle = "white";
+              ctx.arc(
+                keypoint.position.x,
+                keypoint.position.y,
+                10,
+                0,
+                20 * Math.PI
+              );
+              ctx.fill();
+              ctx.stroke();
+            }
+          }
         }
       }
     }
@@ -145,17 +228,28 @@ function drawSkeleton() {
     for (let j = 0; j < poses[i].skeleton.length; j += 1) {
       let partA = poses[i].skeleton[j][0];
       let partB = poses[i].skeleton[j][1];
-      ctx.beginPath();
-      ctx.moveTo(partA.position.x, partA.position.y);
-      ctx.lineTo(partB.position.x, partB.position.y);
-      ctx.lineWidth = 5;
-      ctx.strokeStyle = "red";
-      ctx.stroke();
+      console.log("partA : ", partA.position);
+      console.log("partB : ", partB.position);
+      for (let a = 0; a < objects.length; a++) {
+        if (
+          objects[a].label == "person" &&
+          isInBox(objects[a], partA.position) == true &&
+          isInBox(objects[a], partB.position) == true
+        ) {
+          console.log("if문 통과");
+          ctx.beginPath();
+          ctx.moveTo(partA.position.x, partA.position.y);
+          ctx.lineTo(partB.position.x, partB.position.y);
+          ctx.lineWidth = 5;
+          ctx.strokeStyle = "red";
+          ctx.stroke();
+        }
+      }
     }
   }
 }
 
-// inference
+/* inference */
 let options = {
   inputs: 34,
   outputs: 4, // 종류
