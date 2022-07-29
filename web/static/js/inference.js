@@ -21,33 +21,85 @@ let objects = [];
 let poseNet;
 let poses = [];
 let pose;
-let text = "";
+
+let brain;
+let text = [];
 
 // A function to draw the video and poses into the canvas.
 // This function is independent of the result of posenet
 // This way the video will not seem slow if poseNet
 // is not detecting a position
 
-objectDetector = ml5.objectDetector("cocossd", startDetecting);
+// model loading
+
+function loadAllModels() {
+  return new Promise((resolve, reject) => {
+    objectDetector = ml5.objectDetector("cocossd", startDetecting);
+    poseNet = ml5.poseNet(video, modelReady);
+    poseNet.on("pose", gotPoses);
+    drawCameraIntoCanvas();
+    setTimeout(() => {
+      resolve();
+    }, 10000);
+  });
+}
+
+function brainload() {
+  let options = {
+    inputs: 34,
+    outputs: 4, // 종류
+    task: "classification",
+    debug: true,
+  };
+  brain = ml5.neuralNetwork(options);
+  const modelInfo = {
+    model: "../../static/model/model.json",
+    metadata: "../../static/model/model_meta.json",
+    weights: "../../static/model/model.weights.bin",
+  };
+  brain.load(modelInfo, brainLoaded);
+}
+
+loadAllModels().then(() => {
+  console.log("then");
+  brainload();
+});
 
 function startDetecting() {
   console.log("cocossd model ready");
-  drawCameraIntoCanvas();
 }
-
-// Create a new poseNet method with a single detection
-poseNet = ml5.poseNet(video, modelReady);
-poseNet.on("pose", gotPoses);
 
 // A function that gets called every time there's an update from the model
 function gotPoses(results) {
-  poses = results; // 이 부분에서 bounding box안에 안들어가는 좌표는 다 지워버리고 poses에 넣기
-  if (poses.length > 0) {
-    pose = poses[0].pose; // 아니면 이 부분?
-    skeleton = poses[0].skeleton;
-    // console.log("pose : ", pose);
-    // console.log("skeleton : ", skeleton);
+  let person = [];
+  if (results.length > 0) {
+    for (let i = 0; i < results.length; i++) {
+      for (let a = 0; a < objects.length; a++) {
+        if (
+          objects[a].label == "person" &&
+          results[i].pose.score > 0.5 &&
+          (isInBox(objects[a], results[i].pose.nose) ||
+            isInBox(objects[a], results[i].pose.leftEar) ||
+            isInBox(objects[a], results[i].pose.rightEar))
+        ) {
+          person.push(results[i]);
+        }
+      }
+    }
+    poses = person;
+    // console.log(poses);
   }
+
+  // poses = results; // 이 부분에서 bounding box안에 안들어가는 좌표는 다 지워버리고 poses에 넣기
+  // if (poses.length > 0) {
+  //   for (let i = 0; i < poses.length; i++) {}
+  //   pose = poses[0].pose; // 아니면 이 부분?
+  //   console.log(poses[0].pose.keypoints);
+  //   console.log("pose 0 : ", poses[0].pose);
+  //   console.log("pose 1 : ", poses[1].pose);
+  //   console.log("pose : ", pose);
+  //   console.log("skeleton : ", skeleton);
+  // }
 }
 
 function modelReady() {
@@ -63,13 +115,6 @@ function drawCameraIntoCanvas() {
   detect();
   drawKeypoints();
   drawSkeleton();
-
-  ctx.strokeStyle = "black";
-  ctx.font = "bold 48px sans-serif";
-  ctx.lineWidth = 10;
-  ctx.strokeText(text, 30, 100);
-  ctx.fillStyle = "white";
-  ctx.fillText(text, 30, 100);
 
   window.requestAnimationFrame(drawCameraIntoCanvas);
 }
@@ -190,30 +235,37 @@ function drawKeypoints() {
       if (j >= 1 && j <= 4) continue; // 왼쪽 눈, 오른쪽 눈, 왼쪽 귀, 오른쪽 귀 표시 x
       let keypoint = poses[i].pose.keypoints[j];
 
-      for (let a = 0; a < objects.length; a++) {
-        if (
-          objects[a].label == "person" &&
-          isInBox(objects[a], keypoint.position) == true
-        ) {
-          if (keypoint.score > 0.5) {
-            // 코 위치 얼굴 모양 만들기
-            if (j == 0) {
-              drawFace(i, keypoint);
-            } else {
-              ctx.beginPath();
-              ctx.strokeStyle = "red";
-              ctx.fillStyle = "white";
-              ctx.arc(
-                keypoint.position.x,
-                keypoint.position.y,
-                10,
-                0,
-                20 * Math.PI
-              );
-              ctx.fill();
-              ctx.stroke();
-            }
-          }
+      if (keypoint.score > 0.2) {
+        // 코 위치 얼굴 모양 만들기
+        if (j == 0) {
+          //drawFace(i, keypoint);
+          ctx.strokeStyle = "black";
+          ctx.font = "bold 48px sans-serif";
+          ctx.lineWidth = 10;
+          ctx.strokeText(
+            text[i],
+            poses[i].pose.keypoints[0].position.x,
+            poses[i].pose.keypoints[0].position.y
+          );
+          ctx.fillStyle = "white";
+          ctx.fillText(
+            text[i],
+            poses[i].pose.keypoints[0].position.x,
+            poses[i].pose.keypoints[0].position.y
+          );
+        } else {
+          ctx.beginPath();
+          ctx.strokeStyle = "red";
+          ctx.fillStyle = "white";
+          ctx.arc(
+            keypoint.position.x,
+            keypoint.position.y,
+            10,
+            0,
+            20 * Math.PI
+          );
+          ctx.fill();
+          ctx.stroke();
         }
       }
     }
@@ -228,43 +280,35 @@ function drawSkeleton() {
     for (let j = 0; j < poses[i].skeleton.length; j += 1) {
       let partA = poses[i].skeleton[j][0];
       let partB = poses[i].skeleton[j][1];
-      console.log("partA : ", partA.position);
-      console.log("partB : ", partB.position);
-      for (let a = 0; a < objects.length; a++) {
-        if (
-          objects[a].label == "person" &&
-          isInBox(objects[a], partA.position) == true &&
-          isInBox(objects[a], partB.position) == true
-        ) {
-          console.log("if문 통과");
-          ctx.beginPath();
-          ctx.moveTo(partA.position.x, partA.position.y);
-          ctx.lineTo(partB.position.x, partB.position.y);
-          ctx.lineWidth = 5;
-          ctx.strokeStyle = "red";
-          ctx.stroke();
-        }
-      }
+      // console.log("partA : ", partA.position);
+      // console.log("partB : ", partB.position);
+
+      ctx.beginPath();
+      ctx.moveTo(partA.position.x, partA.position.y);
+      ctx.lineTo(partB.position.x, partB.position.y);
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = "red";
+      ctx.stroke();
     }
   }
 }
 
 /* inference */
-let options = {
-  inputs: 34,
-  outputs: 4, // 종류
-  task: "classification",
-  debug: true,
-};
+// let options = {
+//   inputs: 34,
+//   outputs: 4, // 종류
+//   task: "classification",
+//   debug: true,
+// };
 
-brain = ml5.neuralNetwork(options);
-const modelInfo = {
-  model: "../../static/model/model.json",
-  metadata: "../../static/model/model_meta.json",
-  weights: "../../static/model/model.weights.bin",
-};
+// var brain = ml5.neuralNetwork(options);
+// const modelInfo = {
+//   model: "../../static/model/model.json",
+//   metadata: "../../static/model/model_meta.json",
+//   weights: "../../static/model/model.weights.bin",
+// };
 
-brain.load(modelInfo, brainLoaded);
+//brain.load(modelInfo, brainLoaded);
 
 function brainLoaded() {
   console.log("pose classification ready");
@@ -272,32 +316,63 @@ function brainLoaded() {
 }
 
 function classifyPose() {
-  if (pose) {
-    let inputs = [];
-    for (let i = 0; i < pose.keypoints.length; i++) {
-      let x = pose.keypoints[i].position.x;
-      let y = pose.keypoints[i].position.y;
-      inputs.push(x);
-      inputs.push(y);
+  // console.log("classifyPose has called");
+  if (poses) {
+    // console.log("poses are exist");
+    for (let i = 0; i < poses.length; i++) {
+      // console.log("pose index : ", i);
+      let inputs = [];
+      for (let j = 0; j < poses[i].pose.keypoints.length; j++) {
+        let x = poses[i].pose.keypoints[j].position.x;
+        let y = poses[i].pose.keypoints[j].position.y;
+        inputs.push(x);
+        // console.log("x:", x);
+        inputs.push(y);
+        // console.log("y:", y);
+      }
+      // console.log("inputs:", inputs);
+      setId(i);
+      brain.classify(inputs, gotResult);
     }
-    brain.classify(inputs, gotResult);
+    setTimeout(classifyPose, 10);
   } else {
-    setTimeout(classifyPose, 100);
+    setTimeout(classifyPose, 10);
   }
 }
 
+let id;
+function setId(i) {
+  id = i;
+}
+function getId() {
+  return id;
+}
+
 function gotResult(error, results) {
+  let user = getId();
+  let poseLabel;
   if (results[0].confidence > 0.9) {
     poseLabel = results[0].label.toUpperCase();
   } else {
     poseLabel = "";
   }
 
-  if (poseLabel == "") {
-    text = "Pose is ...";
-  } else {
-    text = "Pose is " + poseLabel;
-  }
+  text[user] = poseLabel;
+  // console.log(text[user]);
+  // ctx.strokeStyle = "black";
+  // ctx.font = "bold 48px sans-serif";
+  // ctx.lineWidth = 10;
+  // ctx.strokeText(
+  //   poseLabel,
+  //   poses[user].pose.keypoints[0].position.x,
+  //   poses[user].pose.keypoints[0].position.y
+  // );
+  // ctx.fillStyle = "white";
+  // ctx.fillText(
+  //   poseLabel,
+  //   poses[user].pose.keypoints[0].position.x,
+  //   poses[user].pose.keypoints[0].position.y
+  // );
   // console.log(poseLabel);
-  classifyPose();
+  // classifyPose();
 }
