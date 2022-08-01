@@ -3,7 +3,7 @@
 이 프로젝트는 [ml5.js](https://ml5js.org/)의 NeuralNetwork, PoseNet(버전에 따라 ObjectDetector도 추가)을 활용한 실시간 인간 행동 인식 프로젝트이다.
 
 - **Versions**
-    - [**Core**]([https://github.com/jjaegii/ML5_poseClassification/tree/master](https://github.com/jjaegii/ML5_poseClassification/tree/master)
+    - [**Core**](https://github.com/jjaegii/ML5_poseClassification/tree/master)
         → 이 프로젝트에 들어가는 인공지능 모델의 핵심 코드(p5js+ml5js - NeuralNetwork + PoseNet)
        
     - [**webcam_version**]([https://github.com/jjaegii/ML5_poseClassification/tree/webcam_version](https://github.com/jjaegii/ML5_poseClassification/tree/webcam_version)
