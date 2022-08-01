@@ -6,13 +6,13 @@
     - [**Core**](https://github.com/jjaegii/ML5_poseClassification/tree/master)
         → 이 프로젝트에 들어가는 인공지능 모델의 핵심 코드(p5js+ml5js - NeuralNetwork + PoseNet)
        
-    - [**webcam_version**]([https://github.com/jjaegii/ML5_poseClassification/tree/webcam_version](https://github.com/jjaegii/ML5_poseClassification/tree/webcam_version)
+    - [**webcam_version**](https://github.com/jjaegii/ML5_poseClassification/tree/webcam_version)
     → 웹캠을 웹서버(node.js express)에 띄워보는 버전(p5js+ml5js - NeuralNetwork + PoseNet)
 	
-    - [**rtsp_version**]([https://github.com/jjaegii/ML5_poseClassification/tree/rtsp_version](https://github.com/jjaegii/ML5_poseClassification/tree/rtsp_version)
+    - [**rtsp_version**](https://github.com/jjaegii/ML5_poseClassification/tree/rtsp_version)
     → golang의 gin을 사용해 cctv 화면(rtsp)을 읽어와 여러 객체(사람)를 인식하나, 단일 객체(한 명의 사람)의 행동만 인식하는 버전(ml5js - NeuralNetwork + poseNet + ObjectDetector, singleClassify)
 	
-    - [**rtsp_version_multiple**]([https://github.com/jjaegii/ML5_poseClassification/tree/rtsp_version_multiple](https://github.com/jjaegii/ML5_poseClassification/tree/rtsp_version_multiple)
+    - [**rtsp_version_multiple**](https://github.com/jjaegii/ML5_poseClassification/tree/rtsp_version_multiple)
     → rtsp_version과 같이 golang의 gin을 사용해 cctv 화면(rtsp)을 읽어와 여러 객체(사람)를 인식하고, 다중 객체(여러 사람)의 행동을 인식하는 버전(ml5js - NeuralNetwork + poseNet + ObjectDetector, multipleClassify)
     
 
