@@ -1,75 +1,117 @@
-let img;
+let video;
 let poseNet;
+let pose;
+let skeleton;
 
-function preload() {
-  // load an image for pose detection
-  //   let image = document.getElementById("img"),
-  //     socket = io("");
-  //   socket.on("data", function (data) {
-  //     image.src = "data:image/jpeg;base64," + data;
-  //     img = loadImage("data:image/jpeg;base64," + data);
-  //   });
-  img = loadImage("data/runner.jpg");
-}
+let brain;
+let poseLabel = "";
+
+// function getVideo() {
+//   navigator.mediaDevices
+//     .getUserMedia({ video: true, audio: false })
+//     .then((loaclMediaStream) => {
+//       video.src = window.URL.createObjectURL(loaclMediaStream);
+//       video.play();
+//     })
+//     .catch((err) => {
+//       console.error(err);
+//     });
+// }
+// getVideo();
 
 function setup() {
-  createCanvas(640, 360);
-  image(img, 0, 0);
-  poseNet = ml5.poseNet(modelReady);
+  createCanvas(640, 480);
+  // video = getVideo();
+  video = createVideo();
+  video.hide();
+  poseNet = ml5.poseNet(video, modelLoaded);
+  poseNet.on("pose", gotPoses);
+
+  let options = {
+    inputs: 34,
+    outputs: 4, // 종류
+    task: "classification",
+    debug: true,
+  };
+  brain = ml5.neuralNetwork(options);
+  const modelInfo = {
+    model: "model/model.json",
+    metadata: "model/model_meta.json",
+    weights: "model/model.weights.bin",
+  };
+
+  brain.load(modelInfo, brainLoaded);
 }
 
-// when poseNet is ready, do the detection
-function modelReady() {
-  select("#status").html("Model Loaded");
-  // If/When a pose is detected, poseNet.on('pose', ...) will be listening for the detection results
-  poseNet.on("pose", function (poses) {
-    if (poses.length > 0) {
-      drawSkeleton(poses);
-      drawKeypoints(poses);
-    }
-  });
-  // When the model is ready, run the singlePose() function...
-  poseNet.singlePose(img);
-}
-
-// The following comes from https://ml5js.org/docs/posenet-webcam
-// A function to draw ellipses over the detected keypoints
-function drawKeypoints(poses) {
-  // Loop through all the poses detected
-  for (let i = 0; i < poses.length; i++) {
-    // For each pose detected, loop through all the keypoints
-    let pose = poses[i].pose;
-    for (let j = 0; j < pose.keypoints.length; j++) {
-      // A keypoint is an object describing a body part (like rightArm or leftShoulder)
-      let keypoint = pose.keypoints[j];
-      // Only draw an ellipse is the pose probability is bigger than 0.2
-      if (keypoint.score > 0.2) {
-        fill(255);
-        stroke(20);
-        strokeWeight(4);
-        ellipse(round(keypoint.position.x), round(keypoint.position.y), 8, 8);
-      }
-    }
+// making skeleton
+function gotPoses(poses) {
+  if (poses.length > 0) {
+    pose = poses[0].pose;
+    skeleton = poses[0].skeleton;
   }
 }
 
-// A function to draw the skeletons
-function drawSkeleton(poses) {
-  // Loop through all the skeletons detected
-  for (let i = 0; i < poses.length; i++) {
-    let skeleton = poses[i].skeleton;
-    // For every skeleton, loop through all body connections
-    for (let j = 0; j < skeleton.length; j++) {
-      let partA = skeleton[j][0];
-      let partB = skeleton[j][1];
-      stroke(255);
-      strokeWeight(1);
-      line(
-        partA.position.x,
-        partA.position.y,
-        partB.position.x,
-        partB.position.y
-      );
+function modelLoaded() {
+  console.log("poseNet ready");
+}
+
+function draw() {
+  push();
+  translate(video.width, 0);
+  scale(-1, 1);
+  image(video, 0, 0, video.width, video.height);
+
+  if (pose) {
+    for (let i = 0; i < skeleton.length; i++) {
+      let a = skeleton[i][0];
+      let b = skeleton[i][1];
+      strokeWeight(2);
+      stroke(0);
+      line(a.position.x, a.position.y, b.position.x, b.position.y);
+    }
+
+    for (let i = 0; i < pose.keypoints.length; i++) {
+      let x = pose.keypoints[i].position.x;
+      let y = pose.keypoints[i].position.y;
+      fill(0, 0, 0);
+      ellipse(x, y, 16, 16);
     }
   }
+  pop();
+
+  fill(255, 0, 255);
+  noStroke();
+  textSize(256);
+  textAlign(CENTER, CENTER);
+  text(poseLabel, width / 2, height / 2);
+}
+
+// 추론 파트
+function brainLoaded() {
+  console.log("pose classification ready");
+  classifyPose();
+}
+
+function classifyPose() {
+  if (pose) {
+    let inputs = [];
+    for (let i = 0; i < pose.keypoints.length; i++) {
+      let x = pose.keypoints[i].position.x;
+      let y = pose.keypoints[i].position.y;
+      inputs.push(x);
+      inputs.push(y);
+    }
+    brain.classify(inputs, gotResult);
+  } else {
+    setTimeout(classifyPose, 100);
+  }
+}
+
+function gotResult(error, results) {
+  if (results[0].confidence > 0.9) {
+    poseLabel = results[0].label.toUpperCase();
+  } else {
+    poseLabel = "";
+  }
+  classifyPose();
 }
