@@ -6,23 +6,9 @@ let skeleton;
 let brain;
 let poseLabel = "";
 
-// function getVideo() {
-//   navigator.mediaDevices
-//     .getUserMedia({ video: true, audio: false })
-//     .then((loaclMediaStream) => {
-//       video.src = window.URL.createObjectURL(loaclMediaStream);
-//       video.play();
-//     })
-//     .catch((err) => {
-//       console.error(err);
-//     });
-// }
-// getVideo();
-
 function setup() {
   createCanvas(640, 480);
-  // video = getVideo();
-  video = createVideo();
+  video = createCapture(VIDEO);
   video.hide();
   poseNet = ml5.poseNet(video, modelLoaded);
   poseNet.on("pose", gotPoses);
@@ -35,9 +21,9 @@ function setup() {
   };
   brain = ml5.neuralNetwork(options);
   const modelInfo = {
-    model: "model/model.json",
-    metadata: "model/model_meta.json",
-    weights: "model/model.weights.bin",
+    model: "../model/model.json",
+    metadata: "../model/model_meta.json",
+    weights: "../model/model.weights.bin",
   };
 
   brain.load(modelInfo, brainLoaded);
