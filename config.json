@@ -7,7 +7,7 @@
     "H264_AAC": {
       "on_demand": false,
       "disable_audio": true,
-      "url": "rtsp://jjaegii:12345@210.90.113.82:6666/stream_ch00_0"
+      "url": "rtsp://id:pw@rtsp_address"
     }
   }
 }
