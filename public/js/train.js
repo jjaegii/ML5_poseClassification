@@ -8,7 +8,7 @@ function setup() {
     debug: true,
   };
   brain = ml5.neuralNetwork(options);
-  brain.loadData("2022-7-21_11-9-55.json", dataReady);
+  brain.loadData("traindata.json", dataReady);
 }
 
 function dataReady() {
