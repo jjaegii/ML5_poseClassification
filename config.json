@@ -7,7 +7,7 @@
     "H264_AAC": {
       "on_demand": false,
       "disable_audio": true,
-      "url": "rtsp://id:password@192.168.0.100:554/stream_ch00_0"
+      "url": "rtsp://id:pw@rtsp_address"
     }
   }
 }
