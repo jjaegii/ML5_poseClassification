@@ -46,7 +46,7 @@ let options = {
 
 ### collect
 
-동작 데이터 수집 [Google Teachable Machine]([https://teachablemachine.withgoogle.com/](https://teachablemachine.withgoogle.com/))으로도 가능
+동작 데이터 수집 [Google Teachable Machine](https://teachablemachine.withgoogle.com/)으로도 가능
 
 - **Demo**
     
