@@ -12,6 +12,7 @@ import (
 
 	webrtc "github.com/deepch/vdk/format/webrtcv3"
 	"github.com/gin-gonic/gin"
+	"github.com/unrolled/secure"
 )
 
 type JCodec struct {
@@ -20,9 +21,26 @@ type JCodec struct {
 
 func serveHTTP() {
 	gin.SetMode(gin.ReleaseMode)
+	secureFunc := func() gin.HandlerFunc {
+		return func(c *gin.Context) {
+			secureMiddleware := secure.New(secure.Options{
+				SSLRedirect: true,
+				SSLHost:     "localhost:8083",
+			})
+			err := secureMiddleware.Process(c.Writer, c.Request)
+
+			// If there was an error, do not continue.
+			if err != nil {
+				return
+			}
+
+			c.Next()
+		}
+	}()
 
 	router := gin.Default()
 	router.Use(CORSMiddleware())
+	router.Use(secureFunc)
 	
 	if _, err := os.Stat("./web"); !os.IsNotExist(err) {
 		router.LoadHTMLGlob("web/templates/*")
@@ -34,7 +52,11 @@ func serveHTTP() {
 	router.POST("/stream", HTTPAPIServerStreamWebRTC2)
 
 	router.StaticFS("/static", http.Dir("web/static"))
-	err := router.Run(Config.Server.HTTPPort)
+	// http
+	// err := router.Run(Config.Server.HTTPPort)
+	
+	// https
+	err := router.RunTLS(Config.Server.HTTPPort, "localhost+4.pem", "localhost+4-key.pem")
 	if err != nil {
 		log.Fatalln("Start HTTP Server error", err)
 	}
