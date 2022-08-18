@@ -9,13 +9,14 @@ let poseLabel = "";
 function setup() {
   createCanvas(640, 480);
   video = createCapture(VIDEO);
+  video.size(width, height);
   video.hide();
   poseNet = ml5.poseNet(video, modelLoaded);
   poseNet.on("pose", gotPoses);
 
   let options = {
     inputs: 34,
-    outputs: 2,
+    outputs: 3,
     task: "classification",
     debug: true,
   };
@@ -96,6 +97,9 @@ function classifyPose() {
 function gotResult(error, results) {
   if (results[0].confidence > 0.75) {
     poseLabel = results[0].label.toUpperCase();
+  } else {
+    poseLabel = "";
   }
+  console.log(poseLabel);
   classifyPose();
 }
